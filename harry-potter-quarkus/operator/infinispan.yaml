@@ -1,0 +1,13 @@
+apiVersion: infinispan.org/v1
+kind: Infinispan
+metadata:
+  name: infinispan
+spec:
+  replicas: 1
+  expose:
+    type: NodePort
+    nodePort: 30000
+  security:
+    endpointSecretName: connect-secret
+  service:
+    type: DataGrid

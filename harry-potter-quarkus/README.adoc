@@ -1,0 +1,158 @@
+:toc: left
+:toclevels: 4
+:source-highlighter: highlightjs
+:icons: font
+:imagesdir: ./images
+
+== Harry Potter Quarkus Demo
+The main goal of this demo is to showcase how to use Infinispan client with Quarkus.
+
+*Infinispan* features that are being used:
+
+* Create stores dynamically
+* Simple get/put operations
+* Full-text query
+* Continuous query
+
+*Quarkus* features:
+
+* REST web-service
+* Web Socket
+* Task Scheduling
+* Application properties
+* Application lifecycle events listeners
+
+The demo is composed by two applications that run independently:
+
+* Hogwarts monitoring
+* Wizards magic
+
+Each application has a dedicated section in this documentation
+
+== Before running the demo
+Quarkus uses the https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html[Infinispan Remote Client] ("Hot Rod").
+You need to have an Infinispan Server running before you run this demo.
+
+=== Option 1: Use Docker
+    docker run -it -p 11222:11222 -e USER="admin" -e PASS="password" infinispan/server
+
+IMPORTANT: *Docker for mac users*. There is a known issue to connect with the server using the Hot Rod client.
+Blog post https://blog.infinispan.org/2018/03/accessing-infinispan-inside-docker-for.html[here].
+You won't need to do this in production, but for testing/development purposes, if you want to connect to a Infinispan
+Server running in a Docker container, create `hotrod-client.properties` file under `src/main/resources/META-INF` folder
+in each application and configure `infinispan.client.hotrod.client_intelligence=BASIC`
+
+
+=== Option 2: Download and run the server
+- Download the server from https://infinispan.org/download/[here]
+- Unzip the file
+- Create a user with admin rights from the installation folder: `./bin/cli.sh user create admin -p password`
+- Run a standalone server from the installation folder: `./bin/server.sh`
+
+== Hogwarts Monitoring
+Characters can execute spells, and we want to monitor who is in Hogwarts and performing magic.
+
+- A `Character` has an id, name, biography and type (other, student, teacher, muggle).
+- A `Spell` has an id, name and description.
+- A `Spell` is performed by a character. This character may or may not be at Hogwarts.
+
+=== Data loading
+`DataLoader` class loads characters and spells in two separate stores.
+This is done at startup time
+
+=== Magic is going on
+link:hogwarts-monitoring/src/main/java/org/infinispan/hp/service/HogwartsMagicCreator.java[Hogwarts Magic Creator] is going to emulate
+characters performing some magic. It will randomly pick a character and a spell to perform (if they can)!
+Characters in Hogwarts are teachers or students.
+
+TIP: To disable this service, set `create.magic` property to `false` in the `application.properties`.
+
+=== Search
+link:hogwarts-monitoring/src/main/java/org/infinispan/hp/CharactersResource.java[A simple REST service] is available to query
+characters by id or perform a full-text search of the name or the biography.
+
+=== Magic Socket
+link:hogwarts-monitoring/src/main/java/org/infinispan/hp/HogwartsMagicWebSocket.java[A socket] that performs a Continuous Query making it possible to
+monitor which characters in Hogwarts are currently performing magic.
+The continuous query does not have to go to the server and it is all stored in the client application itself.
+Read more about these queries in the official https://infinispan.org/docs/stable/titles/developing/developing.html#query_continuous[Infinispan documentation].
+
+image::hogwarts-monitoring.png[Hogwarts Monitoring WebSocket]
+
+=== Run Hogwarts Monitoring in dev mode
+Change into the `hogwarts-monitoring` directory.
+To run in development mode, just run `mvn clean compile quarkus:dev`. This allows for hot swapping the application, so you can tweak parts of it 
+and it will automatically redeploy.
+
+Go to http://localhost:8080 and monitor the magic!
+
+You will be connected to the monitoring socket. The interface displays some links to display a character by id and
+ perform a full-text search.
+
+.Build and run the demo with jar
+   mvn clean package
+   cd target
+   java -jar hogwarts-monitoring-runner.jar
+
+.Build and run the application in native mode
+   mvn package -Pnative
+   cd target
+   ./hogwarts-monitoring-runner
+
+=== Loaded data
+Maven copies `hp_characters.csv` and `hp_spells.csv` to the target directory, that's why it's easier to run the executables
+from the `target` folder. However you can override these files location at runtime.
+
+.Running the jar
+ 
+   java -jar  -Dcharacters.filename=/my/path/hp_characters.csv -Dspells.filename=/my/path/hp_spells.csv hogwarts-monitoring-runner.jar
+
+.Running the native
+   ./hogwarts-monitoring-runner -Dcharacters.filename=/my/path/hp_characters.csv -Dspells.filename=/my/path/hp_spells.csv
+
+## Wizards Magic
+
+The `wizards-magic` application is a simple web application that allows to put curses on someone!
+
+Run this application as explained above. The application will be available at http://localhost:8082.
+
+A simple form will be displayed. You can add you name, pick a curse and tell which kind of Wizard you are.
+If the Hogwarts monitoring is running, you should be able to see your curse displayed... If you chose to be
+a teacher or a student, of course!
+
+
+== Kubernetes
+
+=== Install and start Minikube
+```shell
+ minikube start --driver=virtualbox --cpus 4 --memory "8192mb"
+```
+=== Create Kubernetes Secret `clients-credentials`
+```shell
+kubectl create secret generic clients-credentials
+--from-literal=infinispan-username=admin
+--from-literal=infinispan-password=secret
+```
+
+=== Build and deploy
+```shell
+eval $(minikube -p minikube docker-env)
+./mvnw clean package -Dquarkus.kubernetes.deploy=true -DskipTests=true
+```
+
+=== Install the Infinispan Operator
+```shell
+curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.19.1/install.sh | bash -s v0.19.1
+kubectl create -f https://operatorhub.io/install/infinispan.yaml
+kubectl get csv -n operators
+```
+
+=== Create Infinispan identities secret
+```shell
+kubectl create secret generic --from-file=identities.yaml connect-secret
+```
+
+=== Deploy infinispan server
+```shell
+kubectl apply -f infinispan.yaml
+```
