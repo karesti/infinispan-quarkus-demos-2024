@@ -40,6 +40,15 @@ public WeatherForecast getForecast(@RestPath String city, @RestQuery long daysIn
 ## Retourner Weather
 
 ```java
+@CacheResult(cacheName = "mycache")
+public Weather getDaily(long epoch, String city) {
+    LocalDate localDate = LocalDate.ofEpochDay(epoch);
+    String dailyResult = getDailyResult(localDate.getDayOfMonth() % 4);
+    return new Weather(dailyResult, localDate.getDayOfWeek().name(), city);
+}
+```
+
+```java
 @Proto
 public record Weather(String weather, String day, String city) {
 }
@@ -52,14 +61,6 @@ public interface WeatherSchema extends GeneratedSchema {
 }
 ```
 
-```java
-@CacheResult(cacheName = "mycache")
-public Weather getDaily(long epoch, String city) {
-    LocalDate localDate = LocalDate.ofEpochDay(epoch);
-    String dailyResult = getDailyResult(localDate.getDayOfMonth() % 4);
-    return new Weather(dailyResult, localDate.getDayOfWeek().name(), city);
-}
-```
 
 ```java
     @GET

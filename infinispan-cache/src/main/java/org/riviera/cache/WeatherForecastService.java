@@ -19,6 +19,12 @@ public class WeatherForecastService {
         return localDate.getDayOfWeek() + " will be " + getDailyResult(localDate.getDayOfMonth() % 4);
     }
 
+    public Weather getDaily(long epoch, String city) {
+        LocalDate localDate = LocalDate.ofEpochDay(epoch);
+        String dailyResult = getDailyResult(localDate.getDayOfMonth() % 4);
+        return new Weather(dailyResult, localDate.getDayOfWeek().name(), city);
+    }
+
     private String getDailyResult(int dayOfMonthModuloFour) {
         switch (dayOfMonthModuloFour) {
             case 0:
