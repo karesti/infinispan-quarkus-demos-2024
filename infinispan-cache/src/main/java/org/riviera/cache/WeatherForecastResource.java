@@ -31,4 +31,18 @@ public class WeatherForecastResource {
         return new WeatherForecast(dailyForecasts, executionEnd - executionStart);
     }
 
+//    @GET
+//    @Path("{city}")
+    public WeatherForecast getForecast(String city, @RestQuery long daysInFuture) {
+        long executionStart = System.currentTimeMillis();
+        LocalDate nowPlusDays = LocalDate.now().plusDays(daysInFuture);
+        LocalDate nowPlusDaysPlus1 = LocalDate.now().plusDays(daysInFuture + 1L);
+        LocalDate nowPlusDaysPlus2 = LocalDate.now().plusDays(daysInFuture + 2L);
+        List<Weather> dailyForecasts = Arrays.asList(
+                service.getDaily(nowPlusDays.toEpochDay(), city),
+                service.getDaily(nowPlusDaysPlus1.toEpochDay(), city),
+                service.getDaily(nowPlusDaysPlus2.toEpochDay(), city));
+        long executionEnd = System.currentTimeMillis();
+        return new WeatherForecast(dailyForecasts, executionEnd - executionStart);
+    }
 }

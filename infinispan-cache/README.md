@@ -49,20 +49,6 @@ public Weather getDaily(long epoch, String city) {
 ```
 
 ```java
-@Proto
-public record Weather(String weather, String day, String city) {
-}
-```
-
-```java
-@ProtoSchema(includeClasses = Weather.class,
-        schemaPackageName = "riviera")
-public interface WeatherSchema extends GeneratedSchema {
-}
-```
-
-
-```java
     @GET
     public WeatherForecast getForecast(@RestQuery String city, @RestQuery long daysInFuture) {
         List<Weather> dailyForecasts = Arrays.asList(
@@ -72,6 +58,19 @@ public interface WeatherSchema extends GeneratedSchema {
         long executionEnd = System.currentTimeMillis();
         return new WeatherForecast(dailyForecasts, executionEnd - executionStart);
     }
+```
+
+```java
+@Proto
+public record Weather(String weather, String day, String city) {
+}
+```
+
+```java
+@ProtoSchema(includeClasses = Weather.class,
+        schemaPackageName = "demo")
+public interface WeatherSchema extends GeneratedSchema {
+}
 ```
 
 ## Faire une recherche non indexé

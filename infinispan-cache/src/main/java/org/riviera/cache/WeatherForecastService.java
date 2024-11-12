@@ -19,6 +19,7 @@ public class WeatherForecastService {
         return localDate.getDayOfWeek() + " will be " + getDailyResult(localDate.getDayOfMonth() % 4);
     }
 
+
     public Weather getDaily(long epoch, String city) {
         LocalDate localDate = LocalDate.ofEpochDay(epoch);
         String dailyResult = getDailyResult(localDate.getDayOfMonth() % 4);
